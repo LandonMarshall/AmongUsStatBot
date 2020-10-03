@@ -95,6 +95,9 @@ client.on('message', message => {
       const returnMessage = addPlayer(key, value);
       finalReturnMessage += returnMessage;
     }    
+    if (finalReturnMessage === ''){
+      finalReturnMessage = 'Invalid format, must add valid players';
+    }
     message.channel.send(finalReturnMessage);
     message.channel.send(`Updated Lobby:\n${printPlayersList()}`)
   }
