@@ -2,7 +2,12 @@ const Discord = require('discord.js');
 const { basename } = require('path');
 const { BOT_TOKEN, PREFIX } = require('../config.json');
 
+// db shit
+const Sequelize = require('sequelize');
+
 const client = new Discord.Client();
+
+
 let playerCollection = new Discord.Collection();
 const matchHistory = [];
 
