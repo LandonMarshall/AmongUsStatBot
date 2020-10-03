@@ -1,10 +1,8 @@
 const Discord = require('discord.js');
 const { basename } = require('path');
-const { BOT_TOKEN, PREFIX, DATABASE_URI } = require('../config.json');
+const { BOT_TOKEN, PREFIX, DATABASE } = require('../config.json');
 
-// db shit
-import Sequelize from 'sequelize';
-import {Uesrs} from 'model'
+const Database = require('./database.js')
 
 
 const client = new Discord.Client();
@@ -22,15 +20,11 @@ let statTemplate = {
 let stats = {}
 
 
-const sequelize = new Sequelize(DATABASE_URI, DATABASE.URI, DATABASE.USER, DATABASE.PASS, {
-  host: 'localhost',
-  dialect: 'sqlite',
-  logging: false,
-  storage: 'database.sqlite'
-})
+const database = new Database(DATABASE.URI, DATABASE.USER, DATABASE.PASS);
 // beta
 
 client.once('ready', () => {
+  database.loadSchema();
 	console.log('Ready!');
 });
 
@@ -91,7 +85,9 @@ function printResultSummary() {
 }
 
 client.on('message', message => {
-	if (!message.content.startsWith(PREFIX) || message.author.bot) return;
+  if (!message.content.startsWith(PREFIX) || message.author.bot) return;
+  console.log(message.author)
+  console.log(message.author)
 
   // TODO: add if statement for if channel name is stats
 
