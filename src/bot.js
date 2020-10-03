@@ -4,6 +4,7 @@ const { BOT_TOKEN, PREFIX } = require('../config.json');
 
 const client = new Discord.Client();
 let playerCollection = new Discord.Collection();
+const matchHistory = [];
 
 let statTemplate = {
   imposterWins: 0,
@@ -16,6 +17,19 @@ let stats = {}
 client.once('ready', () => {
 	console.log('Ready!');
 });
+
+function checkValidMentions(mentions) {
+  if (mentions.length === 0) {
+    return false;
+  }
+  for (let [key, value] of mentions) {
+    // If one of the members isn't in the game don't track stats
+    if (!playerCollection.get(key)){ 
+      return false;
+    }
+  }
+    return true;
+}
 
 function addPlayer(key, value) {
     if (playerCollection.get(key)){
@@ -47,6 +61,19 @@ function printPlayersList() {
   )
 }
 
+function printResultSummary() {
+  let resultSummary = '';
+  let index = 1;
+  matchHistory.forEach((match) => {
+    resultSummary += index + '. ' + match.result + ' ' + match.imposters.join(' & ') + '\n';
+    index++;
+  });
+  if (resultSummary === ''){
+    resultSummary = 'No results to display';
+  }
+  return resultSummary;
+}
+
 client.on('message', message => {
 	if (!message.content.startsWith(PREFIX) || message.author.bot) return;
 
@@ -58,10 +85,12 @@ client.on('message', message => {
 
   // ###########         !addPlayer        ############## 
   if (command === 'addplayer' || command === 'addplayers') {
+    let finalReturnMessage = '';
     for (let [key, value] of mentions) {
       const returnMessage = addPlayer(key, value);
-      message.channel.send(returnMessage);
+      finalReturnMessage += returnMessage;
     }    
+    message.channel.send(finalReturnMessage);
     message.channel.send(`Updated Lobby:\n${printPlayersList()}`)
   }
 
@@ -89,17 +118,14 @@ client.on('message', message => {
   
   // ###########         !win        ############## 
   else if (command === 'win' || command === 'won') {
-    let validMembers = true;
-    for (let [key, value] of mentions) {
-      // If one of the members isn't in the game don't track stats
-      if (!playerCollection.get(key)){ 
-        validMembers = false;
-        message.channel.send(`${value} is not currently in the list of players.`)
-      }
-    }
-    if (validMembers && mentions.size > 0){
-      const playerArray = Array.from(mentions.values());
-      message.channel.send(`Imposters ${playerArray.join(' & ')} have won!\nCrewmates have lost.`)
+    const validMentions = checkValidMentions(mentions);
+
+    if (validMentions && mentions.size > 0){
+      const impostersArray = Array.from(mentions.values());
+      const playersArray = Array.from(playerCollection.values());
+      matchHistory.push({imposters: impostersArray, players: playersArray, result: 'Win '});
+      message.channel.send(`Imposters ${impostersArray.join(' & ')} have won!\nCrewmates have lost.\n\n${printResultSummary()}`);
+      console.log(matchHistory);
     }
     else {
     message.channel.send(`Invalid Imposter - stats not tracked`);
@@ -108,25 +134,36 @@ client.on('message', message => {
 
   // ###########         !lose        ############## 
   else if (command === 'lose' || command === 'lost') {
-    let validMembers = true;
-    for (let [key, value] of mentions) {
-      // If one of the members isn't in the game don't track stats
-      if (!playerCollection.get(key)){ 
-        validMembers = false;
-        message.channel.send(`${value} is not currently in the list of players.`)
-      }
-    }
-    if (validMembers && mentions.size > 0){
-      const playerArray = Array.from(mentions.values());
-      message.channel.send(`Crewmates have won!\nImposters ${playerArray.join(' & ')} have lost.`)
-      for (let [key, value] of mentions) {
-        stats[key].imposterLosses += 1;
-      }
-      console.log(stats);
+    const validMentions = checkValidMentions(mentions);
+
+    if (validMentions && mentions.size > 0){
+      const impostersArray = Array.from(mentions.values());
+      const playersArray = Array.from(playerCollection.values());
+      matchHistory.push({imposters: impostersArray, players: playersArray, result: 'Lose '});
+      message.channel.send(`Crewmates have won!\nImposters ${impostersArray.join(' & ')} have lost.\n\n${printResultSummary()}`);
+      console.log(matchHistory);
     }
     else {
       message.channel.send(`Invalid Imposter - stats not tracked`);
     }
+  }
+
+  else if (command === 'results') {
+    message.channel.send(printResultSummary());
+  }
+
+  else if (command === 'undo') {
+    matchHistory.pop();
+    message.channel.send('Last match undone, new results:\n' + printResultSummary());
+  }
+
+  else if (command === 'stats') {
+    console.log(message.author);
+    matchHistory.forEach((game) => {
+      if (game.players.includes(message.author)){
+        console.log('player played');
+      }
+    });
   }
 	// other commands...
 });
