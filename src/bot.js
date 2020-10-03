@@ -1,9 +1,11 @@
 const Discord = require('discord.js');
 const { basename } = require('path');
-const { BOT_TOKEN, PREFIX } = require('../config.json');
+const { BOT_TOKEN, PREFIX, DATABASE_URI } = require('../config.json');
 
 // db shit
-const Sequelize = require('sequelize');
+import Sequelize from 'sequelize';
+import {Uesrs} from 'model'
+
 
 const client = new Discord.Client();
 
@@ -18,6 +20,15 @@ let statTemplate = {
   crewmateLosses: 0 
 }
 let stats = {}
+
+
+const sequelize = new Sequelize(DATABASE_URI, DATABASE.URI, DATABASE.USER, DATABASE.PASS, {
+  host: 'localhost',
+  dialect: 'sqlite',
+  logging: false,
+  storage: 'database.sqlite'
+})
+// beta
 
 client.once('ready', () => {
 	console.log('Ready!');
